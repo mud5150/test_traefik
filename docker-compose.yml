@@ -1,0 +1,51 @@
+version: '3'
+
+services:
+  reverse-proxy:
+    # The official v2 Traefik docker image
+    image: traefik:2.8
+    # Enables the web UI and tells Traefik to listen to docker
+    command: --api.insecure=true --providers.docker
+    ports:
+      # The HTTP port
+      - "80:80"
+      - "443:443"
+      # The Web UI (enabled by --api.insecure=true)
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  overseerr:
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: overseerr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - overseerr-config:/config
+    ports:
+      - 127.0.0.1:5055:5055
+    labels:
+      - "traefik.http.routers.overseerr.rule=Host(`overseerr`)"
+    restart: unless-stopped
+
+  tautulli:
+    image: lscr.io/linuxserver/tautulli:latest
+    container_name: tautulli
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/London
+    volumes:
+      - tautulli-config:/config
+    ports:
+      - 127.0.0.1:8181:8181
+    labels:
+      - "traefik.http.routers.tautulli.rule=Host(`tautulli`)"
+    restart: unless-stopped
+
+volumes:
+  overseerr-config:
+  tautulli-config:
